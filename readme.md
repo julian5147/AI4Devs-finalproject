@@ -224,7 +224,80 @@ Esta arquitectura proporciona una base sólida para Quickash, permitiendo un des
 
 ### **2.3. Descripción de alto nivel del proyecto y estructura de ficheros**
 
-en construcción...
+El proyecto Quickash sigue una arquitectura de microservicios, con una clara separación entre el frontend y el backend. La estructura general del proyecto es la siguiente:
+
+```
+quickash/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── store/
+│   │   ├── services/
+│   │   └── App.tsx
+│   ├── package.json
+│   └── Dockerfile
+├── backend/
+│   ├── src/
+│   │   ├── auth/
+│   │   ├── merchants/
+│   │   ├── payment-links/
+│   │   ├── transactions/
+│   │   └── main.ts
+│   ├── prisma/
+│   ├── test/
+│   ├── package.json
+│   └── Dockerfile
+├── docker-compose.yml
+└── README.md
+```
+
+#### Frontend (React)
+
+El frontend está construido con React y sigue una arquitectura basada en componentes. Utiliza Redux para la gestión del estado global y React Router para la navegación.
+
+- `public/`: Contiene archivos estáticos y el archivo HTML principal.
+- `src/`: Contiene todo el código fuente de la aplicación React.
+  - `components/`: Componentes reutilizables de React.
+  - `pages/`: Componentes que representan páginas completas.
+  - `store/`: Configuración de Redux y slices para la gestión del estado.
+  - `services/`: Servicios para interactuar con la API del backend.
+- `App.tsx`: Componente principal de la aplicación.
+- `Dockerfile`: Configuración para construir la imagen Docker del frontend.
+
+El frontend sigue el patrón de diseño de Presentación-Contenedor, separando la lógica de presentación de la lógica de negocio.
+
+#### Backend (NestJS)
+
+El backend está construido con NestJS, un framework de Node.js que sigue los principios de la arquitectura modular y la inyección de dependencias.
+
+- `src/`: Contiene todo el código fuente del backend.
+  - `auth/`: Módulo de autenticación.
+  - `merchants/`: Módulo para la gestión de comerciantes.
+  - `payment-links/`: Módulo para la gestión de enlaces de pago.
+  - `transactions/`: Módulo para la gestión de transacciones.
+  - `main.ts`: Punto de entrada de la aplicación NestJS.
+- `prisma/`: Contiene el schema de Prisma y las migraciones de la base de datos.
+- `test/`: Contiene pruebas unitarias y de integración.
+- `Dockerfile`: Configuración para construir la imagen Docker del backend.
+
+El backend sigue el patrón de arquitectura de Módulos de NestJS, que promueve la separación de preocupaciones y la modularidad.
+
+#### Arquitectura general
+
+El proyecto sigue una arquitectura de microservicios, con el frontend y el backend como servicios separados. Esto se refleja en la estructura de archivos y en la presencia de Dockerfiles individuales para cada servicio.
+
+El archivo `docker-compose.yml` en la raíz del proyecto define cómo estos servicios se relacionan entre sí y con otros servicios como la base de datos.
+
+Esta estructura permite:
+1. Desarrollo independiente de frontend y backend.
+2. Escalabilidad independiente de cada servicio.
+3. Fácil integración de nuevos servicios en el futuro.
+4. Despliegue simplificado utilizando contenedores Docker.
+
+La arquitectura general sigue los principios de Diseño Orientado al Dominio (DDD) en el backend, con una clara separación de las capas de presentación, lógica de negocio y acceso a datos.
+> Representa la estructura del proyecto y explica brevemente el propósito de las carpetas principales, así como si obedece a algún patrón o arquitectura específica.
 
 ### **2.4. Infraestructura y despliegue**
 
@@ -232,11 +305,268 @@ en construcción...
 
 ### **2.5. Seguridad**
 
-en construcción...
+1. **Autenticación basada en JWT (JSON Web Tokens)**
+   - Se utiliza JWT para autenticar a los usuarios y proteger las rutas.
+   - Ejemplo de implementación en el backend:
+
+
+```10:12:backend/src/main.ts
+  app.enableCors();
+  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalFilters(new HttpExceptionFilter());
+```
+
+
+2. **Validación de datos de entrada**
+   - Se utiliza el módulo `class-validator` para validar los datos de entrada en los DTOs.
+   - Ejemplo de un DTO con validaciones:
+
+```typescript
+import { IsNotEmpty, IsEmail, MinLength } from 'class-validator';
+
+export class CreateMerchantDto {
+  @IsNotEmpty()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @MinLength(8)
+  password: string;
+}
+```
+
+3. **Hashing de contraseñas**
+   - Las contraseñas se almacenan hasheadas utilizando bcrypt.
+   - Ejemplo de implementación:
+
+```typescript
+import * as bcrypt from 'bcrypt';
+
+async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
+}
+```
+
+4. **CORS (Cross-Origin Resource Sharing)**
+   - Se ha configurado CORS para controlar qué dominios pueden acceder a la API.
+   - Implementación en el archivo main.ts:
+
+
+```10:10:backend/src/main.ts
+  app.enableCors();
+```
+
+
+5. **Manejo de excepciones global**
+   - Se utiliza un filtro de excepciones global para manejar y formatear los errores de manera consistente.
+   - Implementación:
+
+
+```12:12:backend/src/main.ts
+  app.useGlobalFilters(new HttpExceptionFilter());
+```
+
+
+6. **Variables de entorno**
+   - Las configuraciones sensibles se manejan a través de variables de entorno.
+   - Ejemplo de uso en el archivo de configuración de Prisma:
+
+
+```11:14:backend/prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+
+7. **Validación de tipos con TypeScript**
+   - El uso de TypeScript ayuda a prevenir errores de tipo en tiempo de compilación.
+
+8. **Pruebas de seguridad**
+   - Se han implementado pruebas e2e que incluyen escenarios de seguridad.
+   - Ejemplo de una prueba que verifica la autenticación:
+
+
+```19:24:backend/test/app.e2e-spec.ts
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'test@example.com', password: 'testpassword' })
+      .expect(200);
+      .expect('Hello World!');
+    jwtToken = loginResponse.body.access_token;
+```
+
+
+9. **Documentación de API segura**
+   - Se utiliza Swagger para documentar la API, lo que ayuda a prevenir el uso incorrecto.
+   - Configuración en main.ts:
+
+
+```14:22:backend/src/main.ts
+  const config = new DocumentBuilder()
+    .setTitle('Quickash API')
+    .setDescription('API for managing payment links and transactions')
+    .setVersion('1.0')
+    .addTag('payment-links')
+    .addTag('transactions')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+```
+
+
+10. **Principio de mínimo privilegio**
+    - Los endpoints están protegidos y solo accesibles por usuarios autenticados y autorizados.
+
+11. **Logging seguro**
+    - Se utiliza Winston para el logging, asegurando que no se registren datos sensibles.
+
+12. **Actualizaciones regulares de dependencias**
+    - Se mantienen las dependencias actualizadas para prevenir vulnerabilidades conocidas.
 
 ### **2.6. Tests**
 
-en construcción...
+En el proyecto Quickash, se han implementado varios tipos de tests para asegurar la calidad y el correcto funcionamiento del código. A continuación, se describen algunos de los tests más relevantes:
+
+1. **Tests de integración (E2E)**
+
+Estos tests verifican el funcionamiento de la aplicación de extremo a extremo, simulando las interacciones reales de los usuarios con la API.
+
+Ejemplo de test E2E para la creación de un enlace de pago:
+
+
+```27:41:backend/test/app.e2e-spec.ts
+  it('/payment-links (POST)', () => {
+    return request(app.getHttpServer())
+      .post('/payment-links')
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send({
+        merchantId: 2,
+        amount: 100,
+        currency: 'USD',
+      })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body).toHaveProperty('id');
+        expect(res.body).toHaveProperty('url');
+      });
+      });
+```
+
+
+Este test verifica que:
+- Se puede crear un enlace de pago correctamente.
+- La respuesta tiene el código de estado 201 (Created).
+- La respuesta incluye las propiedades 'id' y 'url' del enlace de pago creado.
+
+2. **Tests unitarios de servicios**
+
+Estos tests se centran en verificar el funcionamiento correcto de los servicios individuales de la aplicación.
+
+Ejemplo de test unitario para el servicio de enlaces de pago:
+
+
+```34:59:backend/src/payment-links/payment-links.service.spec.ts
+  describe('create', () => {
+    it('should create a payment link', async () => {
+      const createPaymentLinkDto = {
+        merchantId: 1,
+        amount: 100,
+        currency: 'USD',
+      };
+      };
+      const expectedResult = {
+        id: 1,
+        ...createPaymentLinkDto,
+        url: 'http://example.com/pay/1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        active: true,
+        amount: new Decimal(createPaymentLinkDto.amount),
+      };
+      };
+      jest
+        .spyOn(prismaService.paymentLink, 'create')
+        .mockResolvedValue(expectedResult);
+        .mockResolvedValue(expectedResult);
+      const result = await service.create(createPaymentLinkDto);
+      expect(result).toEqual(expectedResult);
+    });
+    });
+```
+
+
+Este test verifica que:
+- El método `create` del servicio `PaymentLinksService` funciona correctamente.
+- Se crea un enlace de pago con los datos proporcionados.
+- El resultado incluye todas las propiedades esperadas del enlace de pago.
+
+3. **Tests unitarios de controladores**
+
+Estos tests verifican el correcto funcionamiento de los controladores, que son responsables de manejar las solicitudes HTTP.
+
+Ejemplo de test unitario para el controlador de transacciones:
+
+
+```32:55:backend/src/transactions/transactions.controller.spec.ts
+  describe('create', () => {
+    it('should create a transaction', async () => {
+      const createTransactionDto = {
+        paymentLinkId: 1,
+        amount: 100,
+        currency: 'USD',
+        merchantId: 1,
+      };
+      };
+      const expectedResult = {
+        id: 1,
+        ...createTransactionDto,
+        status: 'completed',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        amount: new Decimal(createTransactionDto.amount),
+      };
+      };
+      jest.spyOn(service, 'create').mockResolvedValue(expectedResult);
+      jest.spyOn(service, 'create').mockResolvedValue(expectedResult);
+      const result = await controller.create(createTransactionDto);
+      expect(result).toEqual(expectedResult);
+    });
+    });
+```
+
+
+Este test verifica que:
+- El método `create` del controlador `TransactionsController` funciona correctamente.
+- Se crea una transacción con los datos proporcionados.
+- El resultado coincide con la transacción esperada.
+
+4. **Tests de autenticación**
+
+Se han implementado tests para verificar el correcto funcionamiento del sistema de autenticación basado en JWT.
+
+Ejemplo de test de autenticación (parte del test E2E):
+
+
+```18:24:backend/test/app.e2e-spec.ts
+    // Login to get JWT token
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'test@example.com', password: 'testpassword' })
+      .expect(200);
+      .expect('Hello World!');
+    jwtToken = loginResponse.body.access_token;
+```
+
+
+Este test verifica que:
+- Se puede realizar un login exitoso.
+- Se obtiene un token JWT válido como respuesta.
+
+Estos tests ayudan a asegurar que las diferentes partes de la aplicación Quickash funcionan correctamente de forma individual y en conjunto, proporcionando una base sólida para el desarrollo continuo y la detección temprana de posibles errores.
 
 ---
 
@@ -342,6 +672,27 @@ en construcción...
    - Muchos a uno con USUARIO (una notificación es recibida por un usuario).
    - Muchos a uno con TRANSACCION (una notificación es generada por una transacción).
 
+### **3.3. Diagrama del modelo de datos MVP:**
+
+![Modelo de datos MVP](./res/quickash-data-model-mvp.png)
+
+Este diagrama representa un modelo de datos simplificado que cubre las funcionalidades principales del MVP:
+
+1. **COMERCIO**: Representa al usuario del sistema que genera enlaces de pago y recibe pagos.
+2. **ENLACE_PAGO**: Almacena la información de los enlaces de pago generados por los comercios.
+3. **TRANSACCION**: Registra los pagos realizados a través de los enlaces de pago.
+
+Las relaciones entre estas entidades son:
+
+- Un COMERCIO puede generar múltiples ENLACE_PAGO (relación uno a muchos).
+- Un COMERCIO puede tener múltiples TRANSACCION (relación uno a muchos).
+- Un ENLACE_PAGO puede resultar en múltiples TRANSACCION (relación uno a muchos), aunque típicamente será una sola.
+
+Este modelo simplificado permite:
+
+1. Generar links de pago (creando registros en ENLACE_PAGO).
+2. Crear pagos (registrando TRANSACCION).
+3. Permitir que el comercio vea sus pagos (consultando TRANSACCION filtrado por comercio_id).
 ---
 
 ## 4. Especificación de la API
@@ -350,41 +701,71 @@ https://app.swaggerhub.com/apis-docs/JULISALGADO71_1/Quickash/1.0.0
 
 Ejemplos de petición y respuesta para cada endpoint:
 
-1. Crear un nuevo pago
+1. Crear un nuevo enlace de pago (Create a new payment link)
 
 Petición:
 ```http
-POST /payments HTTP/1.1
+POST /payment-links HTTP/1.1
 Host: api.quickash.com
 Content-Type: application/json
 
 {
-  "amount": 1000,
-  "currency": "COP",
-  "payment_method_id": "pm_1234567890",
-  "comercio_id": "com_9876543210"
+  "merchant_id": 123,
+  "amount": 100.50,
+  "currency": "USD"
 }
 ```
 
 Respuesta:
 ```http
-HTTP/1.1 200 OK
+HTTP/1.1 201 Created
 Content-Type: application/json
 
 {
-  "id": "pay_1234567890",
-  "amount": 1000,
-  "currency": "COP",
-  "status": "succeeded",
-  "created_at": "2023-05-15T10:30:00Z"
+  "id": 456,
+  "merchant_id": 123,
+  "amount": 100.50,
+  "currency": "USD",
+  "url": "https://quickash.com/pay/456",
+  "created_at": "2023-05-15T10:30:00Z",
+  "active": true
 }
 ```
 
-2. Obtener transacciones por usuario
+2. Crear una nueva transacción (Create a new transaction)
 
 Petición:
 ```http
-GET /transactions?user_id=usr_1234567890 HTTP/1.1
+POST /transactions HTTP/1.1
+Host: api.quickash.com
+Content-Type: application/json
+
+{
+  "payment_link_id": 456
+}
+```
+
+Respuesta:
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "id": 789,
+  "merchant_id": 123,
+  "payment_link_id": 456,
+  "amount": 100.50,
+  "currency": "USD",
+  "status": "completed",
+  "created_at": "2023-05-15T11:00:00Z"
+}
+```
+
+3. Obtener transacciones de un comercio (Get transactions for a merchant)
+
+Petición:
+```http
+GET /merchants/123/transactions HTTP/1.1
 Host: api.quickash.com
 ```
 
@@ -395,246 +776,171 @@ Content-Type: application/json
 
 [
   {
-    "id": "txn_1234567890",
-    "amount": 1000,
-    "currency": "COP",
-    "status": "succeeded",
-    "created_at": "2023-05-15T10:30:00Z",
-    "comercio_id": "com_9876543210"
+    "id": 789,
+    "merchant_id": 123,
+    "payment_link_id": 456,
+    "amount": 100.50,
+    "currency": "USD",
+    "status": "completed",
+    "created_at": "2023-05-15T11:00:00Z"
   },
   {
-    "id": "txn_0987654321",
-    "amount": 500,
-    "currency": "COP",
-    "status": "succeeded",
-    "created_at": "2023-05-14T15:45:00Z",
-    "comercio_id": "com_1122334455"
+    "id": 790,
+    "merchant_id": 123,
+    "payment_link_id": 457,
+    "amount": 75.00,
+    "currency": "USD",
+    "status": "completed",
+    "created_at": "2023-05-16T09:30:00Z"
   }
 ]
 ```
 
-3. Obtener métodos de pago disponibles
-
-Petición:
-```http
-GET /payment-methods HTTP/1.1
-Host: api.quickash.com
-```
-
-Respuesta:
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-[
-  {
-    "id": "pm_card",
-    "type": "card",
-    "name": "Tarjeta de crédito/débito"
-  },
-  {
-    "id": "pm_qr",
-    "type": "qr",
-    "name": "Código QR"
-  },
-  {
-    "id": "pm_link",
-    "type": "link",
-    "name": "Enlace de pago"
-  }
-]
-```
-
-Esta especificación de API proporciona una base sólida para la integración de Quickash con aplicaciones de terceros y sistemas de comercio electrónico. Los endpoints cubren las funcionalidades principales de creación de pagos, consulta de transacciones y obtención de métodos de pago disponibles.
+Esta especificación de API proporciona una base sólida para el MVP de Quickash, permitiendo la creación de enlaces de pago, el registro de transacciones y la consulta de transacciones por comercio. La API se ha diseñado siguiendo las mejores prácticas de REST y utiliza JSON para el intercambio de datos.
 
 ---
 
 ## 5. Historias de Usuario
 
-**Historia de Usuario 1: Generar código QR para pago**
-
-Como dueño de un pequeño negocio,
-Quiero generar un código QR para recibir un pago específico,
-Para que mis clientes puedan escanear y pagar fácilmente con sus smartphones.
-
-Criterios de aceptación:
-- El sistema debe permitir ingresar el monto del pago a recibir.
-- Se debe generar un código QR único para cada transacción.
-- El código QR debe contener la información necesaria para procesar el pago.
-- El código QR generado debe ser fácilmente compartible (por ejemplo, a través de correo electrónico o mensaje).
-- El sistema debe mostrar el estado del pago en tiempo real una vez que el código QR es escaneado.
-
-**Historia de Usuario 2: Crear enlace de pago personalizado**
+**Historia de Usuario 1: Crear enlace de pago**
 
 Como vendedor en línea,
 Quiero crear un enlace de pago personalizado para un producto o servicio,
 Para poder compartirlo con mis clientes y recibir pagos de forma remota.
 
 Criterios de aceptación:
-- El sistema debe permitir especificar el monto, descripción y duración de validez del enlace.
+- El sistema debe permitir ingresar el monto del pago y la moneda.
 - Se debe generar un URL único y corto para cada enlace de pago.
-- El enlace debe llevar a una página de pago segura y personalizada con la información del producto/servicio.
-- El sistema debe notificar al vendedor cuando se realice un pago exitoso a través del enlace.
-- Se debe poder desactivar el enlace de pago manualmente o automáticamente después de su uso o expiración.
+- El enlace generado debe ser válido y accesible desde cualquier dispositivo.
+- El sistema debe mostrar una confirmación con el enlace generado y opciones para copiarlo o compartirlo.
+- El enlace debe llevar a una página de pago segura con la información del monto y moneda especificados.
 
-**Historia de Usuario 3: Visualizar panel de control de transacciones**
+**Historia de Usuario 2: Procesar pago a través de enlace**
 
-Como gerente de una tienda,
-Quiero ver un panel de control con el resumen de todas las transacciones realizadas,
-Para poder monitorear las ventas y el flujo de caja de mi negocio.
+Como cliente de un comercio,
+Quiero realizar un pago a través de un enlace que he recibido,
+Para completar mi compra de forma rápida y segura.
 
 Criterios de aceptación:
-- El panel debe mostrar el total de ingresos del día, semana y mes.
-- Se debe visualizar un gráfico con la tendencia de ventas en el tiempo.
-- El panel debe incluir una lista de las transacciones más recientes con detalles como monto, fecha y método de pago.
-- Se debe poder filtrar las transacciones por rango de fechas, método de pago y estado.
-- El sistema debe permitir exportar los datos de las transacciones en formatos comunes (CSV, Excel).
+- Al acceder al enlace, se debe mostrar claramente el monto a pagar y el nombre del comercio.
+- El sistema debe ofrecer al menos un método de pago seguro (por ejemplo, tarjeta de crédito).
+- El proceso de pago debe ser intuitivo y requerir la mínima información necesaria.
+- Tras completar el pago, se debe mostrar una confirmación clara del éxito de la transacción.
+- El sistema debe enviar una notificación al comercio informando sobre el pago realizado.
 
+**Historia de Usuario 3: Visualizar transacciones del comercio**
+
+Como dueño de un negocio,
+Quiero ver un resumen de todas las transacciones realizadas a través de mis enlaces de pago,
+Para llevar un control de mis ingresos y el estado de los pagos.
+
+Criterios de aceptación:
+- El panel debe mostrar una lista de transacciones con fecha, monto, estado y enlace de pago asociado.
+- Se debe poder filtrar las transacciones por fecha y estado (completado, pendiente, fallido).
+- El sistema debe mostrar el total de ingresos para el período seleccionado.
+- Cada transacción debe tener un detalle expandible con información adicional.
+- Se debe ofrecer la opción de exportar la lista de transacciones en formato CSV.
+  
 ---
 
 ## 6. Tickets de Trabajo
 
-**Ticket 1**:
+> Documenta 3 de los tickets de trabajo principales del desarrollo, uno de backend, uno de frontend, y uno de bases de datos. Da todo el detalle requerido para desarrollar la tarea de inicio a fin teniendo en cuenta las buenas prácticas al respecto. 
 
-Título: Implementar API para generación y gestión de códigos QR de pago
+Título: Implementar API REST para la gestión de enlaces de pago y transacciones
 
 Descripción:
-Como dueño de un pequeño negocio, quiero generar un código QR para recibir un pago específico, para que mis clientes puedan escanear y pagar fácilmente con sus smartphones.
-
-Detalles técnicos:
-- Crear un nuevo endpoint en la API REST: POST /api/v1/qr-codes
-- El endpoint debe aceptar los siguientes parámetros:
-  - amount (decimal, requerido): monto del pago
-  - currency (string, requerido): moneda del pago (ej. COP, EUR)
-  - merchant_id (string, requerido): ID del comercio
-  - description (string, opcional): descripción del pago
-- Utilizar la librería qrcode para generar el código QR
-- El código QR debe contener una URL única que dirija a la página de pago
-- Almacenar la información del código QR en la base de datos
-
-Criterios de aceptación:
-1. El endpoint devuelve un código 201 Created con la información del código QR generado, incluyendo su ID único y la URL de la imagen del QR.
-2. El código QR generado es válido y puede ser escaneado por dispositivos móviles.
-3. La información del código QR se almacena correctamente en la base de datos.
-4. Se implementan validaciones para los parámetros de entrada.
-5. Se manejan adecuadamente los errores, devolviendo códigos de estado HTTP apropiados.
+Desarrollar los endpoints necesarios para crear enlaces de pago, procesar pagos y obtener transacciones de un comercio utilizando NestJS.
 
 Tareas:
-1. Crear el modelo de datos para los códigos QR
-2. Implementar el servicio de generación de códigos QR
-3. Crear el controlador para el nuevo endpoint
-4. Implementar las validaciones de entrada
-5. Escribir pruebas unitarias y de integración
-6. Documentar el nuevo endpoint en la documentación de la API
+1. Configurar proyecto NestJS con TypeScript
+2. Implementar módulos para enlaces de pago y transacciones
+3. Crear DTOs para validación de entrada
+4. Desarrollar servicios para la lógica de negocio
+5. Implementar controladores para los endpoints REST
+6. Integrar Prisma como ORM para interactuar con la base de datos
+7. Implementar manejo de errores y excepciones
+8. Configurar validación de datos con class-validator
+9. Implementar autenticación JWT para los endpoints que lo requieran
+10. Escribir pruebas unitarias y de integración
+
+Criterios de aceptación:
+- Los endpoints deben seguir las especificaciones de la API definidas en el OpenAPI
+- El código debe seguir los principios SOLID y las mejores prácticas de NestJS
+- Debe haber una cobertura de pruebas de al menos 80%
+- La autenticación debe estar implementada correctamente
+- El código debe pasar el linter sin errores
+
+Estimación: 13 puntos
+
+Prioridad: Alta
+
+Etiquetas: backend, nestjs, api, mvp
+
+2. **Ticket 2**:
+
+Título: Desarrollar interfaz de usuario para creación de enlaces de pago y visualización de transacciones
+
+Descripción:
+Crear los componentes React necesarios para que los usuarios puedan generar enlaces de pago y ver sus transacciones.
+
+Tareas:
+1. Configurar proyecto React con TypeScript y Create React App
+2. Implementar enrutamiento con React Router
+3. Crear componente para el formulario de creación de enlaces de pago
+4. Desarrollar componente para mostrar la lista de transacciones
+5. Implementar llamadas a la API utilizando Axios o Fetch
+6. Crear componentes reutilizables (botones, inputs, tablas)
+7. Implementar manejo de estado global con Redux o Context API
+8. Añadir validación de formularios con Formik o React Hook Form
+9. Implementar diseño responsive utilizando CSS Modules o Styled Components
+10. Escribir pruebas unitarias con Jest y React Testing Library
+
+Criterios de aceptación:
+- La interfaz debe ser intuitiva y fácil de usar
+- Debe ser responsive y funcionar correctamente en dispositivos móviles y de escritorio
+- Los formularios deben tener validación adecuada
+- Debe haber retroalimentación visual para acciones del usuario (loading, errores, éxito)
+- El código debe seguir las mejores prácticas de React y patrones de diseño adecuados
+- Debe haber una cobertura de pruebas de al menos 70%
 
 Estimación: 8 puntos
 
 Prioridad: Alta
 
-Etiquetas: backend, api, qr-code, payment
-
-2. **Ticket 2**:
-
-Título: Desarrollar interfaz de usuario para crear y mostrar enlaces de pago personalizados
-
-Descripción:
-Como vendedor en línea, quiero crear un enlace de pago personalizado para un producto o servicio, para poder compartirlo con mis clientes y recibir pagos de forma remota.
-
-Detalles técnicos:
-- Crear un nuevo componente React para el formulario de creación de enlaces de pago
-- Implementar la lógica para enviar la solicitud al backend (POST /api/v1/payment-links)
-- Crear una página de visualización del enlace de pago generado
-- Implementar la funcionalidad de copiar al portapapeles y compartir en redes sociales
-
-Criterios de aceptación:
-1. El formulario permite ingresar monto, descripción y duración de validez del enlace.
-2. Al enviar el formulario, se muestra una vista previa del enlace generado.
-3. La página de visualización muestra claramente el enlace corto y un botón para copiarlo.
-4. Se implementan opciones para compartir el enlace en WhatsApp.
-5. La interfaz es responsive y se ve correctamente en dispositivos móviles y de escritorio.
-6. Se muestran mensajes de error claros si hay problemas al crear el enlace.
-
-Tareas:
-1. Diseñar y crear el componente del formulario de creación de enlaces
-2. Implementar la lógica de envío de datos al backend
-3. Crear la página de visualización del enlace generado
-4. Implementar la funcionalidad de copiar al portapapeles
-5. Agregar botones para compartir en redes sociales
-6. Realizar pruebas de usabilidad en diferentes dispositivos
-7. Implementar manejo de errores y mensajes de feedback
-
-Estimación: 5 puntos
-
-Prioridad: Media
-
-Etiquetas: frontend, react, payment-link, ui
+Etiquetas: frontend, react, ui, mvp
 
 **Ticket 3**:
 
-Título: Diseñar e implementar esquema de base de datos para transacciones y métodos de pago
+Título: Configurar base de datos PostgreSQL, Prisma ORM y entorno Docker
 
 Descripción:
-Como gerente de una tienda, quiero ver un panel de control con el resumen de todas las transacciones realizadas, para poder monitorear las ventas y el flujo de caja de mi negocio.
-
-Detalles técnicos:
-- Crear las siguientes tablas en la base de datos PostgreSQL:
-  1. transactions
-  2. payment_methods
-  3. merchants
-- Implementar relaciones entre las tablas
-- Crear índices para optimizar las consultas frecuentes
-- Implementar triggers para actualizar automáticamente los totales de ventas
-
-Esquema de tablas:
-
-```sql
-CREATE TABLE merchants (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE payment_methods (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    is_active BOOLEAN DEFAULT true
-);
-
-CREATE TABLE transactions (
-    id SERIAL PRIMARY KEY,
-    merchant_id INTEGER REFERENCES merchants(id),
-    payment_method_id INTEGER REFERENCES payment_methods(id),
-    amount DECIMAL(10, 2) NOT NULL,
-    currency VARCHAR(3) NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-Criterios de aceptación:
-1. Las tablas se crean correctamente en la base de datos con las relaciones apropiadas.
-2. Se implementan índices en las columnas merchant_id, payment_method_id y created_at de la tabla transactions.
-3. Se crea un trigger que actualiza un campo total_sales en la tabla merchants después de cada inserción en transactions.
-4. Se pueden realizar consultas eficientes para obtener el resumen de transacciones por comerciante y método de pago.
-5. El esquema soporta la inserción de al menos 1 millón de registros sin degradación significativa del rendimiento.
+Establecer la estructura de la base de datos para enlaces de pago y transacciones, configurar Prisma como ORM y preparar el entorno de desarrollo con Docker.
 
 Tareas:
-1. Crear el script SQL para la creación de tablas
-2. Implementar las relaciones entre tablas
-3. Crear índices para optimizar las consultas frecuentes
-4. Implementar el trigger para actualizar total_sales
-5. Escribir consultas de prueba para verificar el rendimiento
-6. Realizar pruebas de carga para verificar el rendimiento con gran volumen de datos
-7. Documentar el esquema de la base de datos y las decisiones de diseño
+1. Diseñar el esquema de la base de datos para enlaces de pago y transacciones
+2. Configurar Prisma y crear el schema.prisma inicial
+3. Implementar migraciones de base de datos con Prisma
+4. Crear Dockerfile para el backend (NestJS)
+5. Crear Dockerfile para el frontend (React)
+6. Desarrollar docker-compose.yml para orquestar los servicios (backend, frontend, base de datos)
+7. Configurar volúmenes para persistencia de datos
+8. Implementar variables de entorno para configuración
+9. Crear scripts para inicialización y seed de la base de datos
+10. Documentar el proceso de configuración y ejecución del entorno
 
-Estimación: 6 puntos
+Criterios de aceptación:
+- El esquema de la base de datos debe reflejar correctamente las entidades y relaciones del MVP
+- Prisma debe estar correctamente configurado y las migraciones deben funcionar sin errores
+- Los Dockerfiles deben seguir las mejores prácticas y optimizaciones
+- El docker-compose.yml debe permitir levantar todo el entorno con un solo comando
+- Debe haber documentación clara sobre cómo configurar y ejecutar el entorno de desarrollo
+
+Estimación: 5 puntos
 
 Prioridad: Alta
 
-Etiquetas: database, postgresql, schema-design, performance
-
-Estos tickets siguen las mejores prácticas al incluir títulos descriptivos, contexto detallado, criterios de aceptación claros, tareas específicas, estimaciones y etiquetas relevantes. Además, proporcionan suficiente información técnica para que los desarrolladores puedan comenzar a trabajar en las tareas sin necesidad de aclaraciones adicionales inmediatas.
+Etiquetas: database, postgresql, prisma, docker, infrastructure, mvp
 
 ---
 
@@ -671,5 +977,363 @@ Este PR sienta las bases para el desarrollo futuro de Quickash, proporcionando u
 Este PR establece la estructura inicial del proyecto. Se requerirá trabajo adicional para implementar las funcionalidades descritas en la documentación.
 
 **Pull Request 2**
+
+# Pull Request: Implementación de funcionalidades clave para Quickash MVP
+
+## Descripción
+
+Este Pull Request implementa las funcionalidades principales del MVP (Producto Mínimo Viable) para Quickash, nuestra plataforma de gestión de pagos mediante códigos QR y enlaces de pago. Se han desarrollado componentes esenciales tanto en el backend como en el frontend, junto con la configuración necesaria de la base de datos y la infraestructura.
+
+## Cambios principales
+
+### Backend (NestJS)
+
+1. Implementación de módulos para:
+   - Autenticación de comerciantes
+   - Gestión de enlaces de pago
+   - Procesamiento de transacciones
+
+2. Integración de Prisma ORM para interactuar con la base de datos PostgreSQL.
+
+3. Implementación de autenticación JWT para proteger las rutas de la API.
+
+4. Configuración de validación de datos de entrada utilizando class-validator.
+
+### Frontend (React)
+
+1. Creación de componentes para:
+   - Página de transacciones
+   - Lista de transacciones
+   - Formulario de creación de enlaces de pago
+
+2. Implementación de llamadas a la API del backend utilizando Axios.
+
+3. Configuración de manejo de estado global con Redux.
+
+4. Implementación de enrutamiento con React Router.
+
+### Base de datos
+
+1. Configuración de PostgreSQL como base de datos principal.
+
+2. Creación de esquemas y migraciones iniciales utilizando Prisma, incluyendo tablas para:
+   - Comerciantes
+   - Enlaces de pago
+   - Transacciones
+
+### Infraestructura
+
+1. Configuración de Docker y docker-compose para facilitar el despliegue y desarrollo.
+
+2. Creación de Dockerfiles para el backend y frontend.
+
+## Archivos clave modificados
+
+### Backend
+
+```typescript:backend/src/main.ts
+app.enableCors();
+app.useGlobalPipes(new ValidationPipe());
+app.useGlobalFilters(new HttpExceptionFilter());
+```
+
+Este fragmento muestra la configuración de CORS, validación global y manejo de excepciones en el backend.
+
+```typescript:backend/src/payment-links/payment-links.service.spec.ts
+describe('create', () => {
+    it('should create a payment link', async () => {
+      const createPaymentLinkDto = {
+        merchantId: 1,
+        amount: 100,
+        currency: 'USD',
+      };
+
+      const expectedResult = {
+        id: 1,
+        ...createPaymentLinkDto,
+        url: 'http://example.com/pay/1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        active: true,
+        amount: new Decimal(createPaymentLinkDto.amount),
+      };
+
+      jest
+        .spyOn(prismaService.paymentLink, 'create')
+        .mockResolvedValue(expectedResult);
+
+      const result = await service.create(createPaymentLinkDto);
+      expect(result).toEqual(expectedResult);
+    });
+  });
+});
+```
+
+Este bloque de código representa una prueba unitaria para el servicio de enlaces de pago.
+
+### Frontend
+
+
+```1:42:frontend/src/pages/Transactions.tsx
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import styled from 'styled-components';
+import TransactionList from '../components/TransactionList';
+import { fetchTransactions } from '../store/transactionsSlice';
+import { AppDispatch, RootState } from '../store/store';
+
+const TransactionsContainer = styled.div`
+  padding: 20px;
+`;
+
+const Title = styled.h1`
+  color: #333;
+`;
+
+const Transactions: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { transactions, status, error } = useSelector((state: RootState) => state.transactions);
+
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchTransactions());
+    }
+  }, [status, dispatch]);
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (status === 'failed') {
+    return <div>Error: {error}</div>;
+  }
+
+  return (
+    <TransactionsContainer>
+      <Title>Transactions</Title>
+      <TransactionList transactions={transactions} />
+    </TransactionsContainer>
+  );
+};
+
+export default Transactions;
+```
+
+
+Este archivo implementa el componente de la página de Transacciones.
+
+
+```1:57:frontend/src/components/TransactionList.tsx
+import React from 'react';
+import styled from 'styled-components';
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+const Th = styled.th`
+  background-color: #f2f2f2;
+  padding: 12px;
+  text-align: left;
+`;
+
+const Td = styled.td`
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+`;
+
+interface Transaction {
+  id: number;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+interface TransactionListProps {
+  transactions: Transaction[];
+}
+
+const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <Th>ID</Th>
+          <Th>Amount</Th>
+          <Th>Currency</Th>
+          <Th>Status</Th>
+          <Th>Date</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {transactions.map((transaction) => (
+          <tr key={transaction.id}>
+            <Td>{transaction.id}</Td>
+            <Td>{transaction.amount}</Td>
+            <Td>{transaction.currency}</Td>
+            <Td>{transaction.status}</Td>
+            <Td>{new Date(transaction.createdAt).toLocaleString()}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+};
+```
+
+
+Este componente muestra la lista de transacciones.
+
+### Base de datos
+
+
+```1:54:backend/prisma/migrations/20240917043136_init/migration.sql
+-- CreateTable
+CREATE TABLE "Merchant" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Merchant_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PaymentLink" (
+    "id" SERIAL NOT NULL,
+    "merchantId" INTEGER NOT NULL,
+    "amount" DECIMAL(65,30) NOT NULL,
+    "currency" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "PaymentLink_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Transaction" (
+    "id" SERIAL NOT NULL,
+    "paymentLinkId" INTEGER NOT NULL,
+    "amount" DECIMAL(65,30) NOT NULL,
+    "currency" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "merchantId" INTEGER NOT NULL,
+
+    CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Merchant_email_key" ON "Merchant"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PaymentLink_url_key" ON "PaymentLink"("url");
+
+-- AddForeignKey
+ALTER TABLE "PaymentLink" ADD CONSTRAINT "PaymentLink_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_paymentLinkId_fkey" FOREIGN KEY ("paymentLinkId") REFERENCES "PaymentLink"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+```
+
+
+Esta migración inicial establece el esquema de la base de datos.
+
+### Infraestructura
+
+
+```1:15:backend/Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start:prod"]
+
+```
+
+
+Este Dockerfile configura el contenedor para el backend.
+
+
+```1:33:docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3010:3010"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/quickash
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:3010
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - ${DB_PORT}:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+
+El archivo docker-compose.yml orquesta los servicios de la aplicación.
+
+## Pruebas
+
+- Se han implementado pruebas unitarias para los servicios del backend.
+- Se han agregado pruebas de componentes para el frontend.
+
+## Documentación
+
+- Se ha actualizado el README.md con instrucciones de configuración y ejecución.
+- Se ha añadido documentación de la API utilizando OpenAPI (Swagger).
+
+## Próximos pasos
+
+1. Mejorar el manejo de errores y la validación de datos.
+2. Refinar la interfaz de usuario del frontend.
+3. Configurar un pipeline de CI/CD.
+
+## Lista de verificación
+
+- [x] El código sigue los estándares de codificación del proyecto.
+- [x] Se han agregado y actualizado pruebas, y todas pasan correctamente.
+- [x] La documentación ha sido actualizada.
+- [x] La configuración de Docker ha sido probada y funciona según lo esperado.
 
 **Pull Request 3**
