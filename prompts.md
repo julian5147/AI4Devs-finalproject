@@ -56,9 +56,7 @@ Necesito ahora un descripción de los componentes más importantes incluyendo la
 
 **Prompt 1:**
 
-**Prompt 2:**
-
-**Prompt 3:**
+En el apartadado de descripción de alto nivel del proyecto y estructura de ficheros, Ayudame a representar la estructura del proyecto y expliquemos brevemente el propósito de las carpetas principales, así como si obedece a algún patrón de diseño o arquitectura específico.
 
 ### **2.4. Infraestructura y despliegue**
 
@@ -72,13 +70,13 @@ Necesito ahora un descripción de los componentes más importantes incluyendo la
 
 **Prompt 1:**
 
-**Prompt 2:**
-
-**Prompt 3:**
+En el apartado de seguridad, Ayudame enumerar y describir las prácticas de seguridad principales que se han implementado en el proyecto, añadiendo ejemplos si procede
 
 ### **2.6. Tests**
 
 **Prompt 1:**
+
+En el apartado de tests, Ayudame a describir brevemente algunos de los tests realizados.
 
 **Prompt 2:**
 
@@ -108,6 +106,10 @@ Dado el diagrama de modelo de datos, crea una descripción de las entidades prin
 
 Ahora describe la API de la aplicación con OpenAPI, crea un ejemplo de petición y respuesta para cada endpoint, como crear un pago, obtener las transacciones por usuario, maximo(3).
 
+**Prompt 2:**
+
+Ahora describe la API de la aplicación con OpenAPI, crea un ejemplo de petición y respuesta para cada endpoint, como crear un pago, obtener las transacciones por usuario, maximo(3), ten en cuenta el MVP.
+
 ---
 
 ### 5. Historias de Usuario
@@ -116,6 +118,10 @@ Ahora describe la API de la aplicación con OpenAPI, crea un ejemplo de petició
 
 Eres un product owner experto, teniendo en cuenta la descripción general del producto, documenta 3 de las historias de usuario principales, teniendo en cuenta las buenas prácticas de producto al respecto.
 
+**Prompt 2:**
+
+Eres un product owner experto, teniendo en cuenta la descripción general del producto y el MVP definido, documenta 3 de las historias de usuario principales, teniendo en cuenta las buenas prácticas de producto al respecto.
+
 ---
 
 ### 6. Tickets de Trabajo
@@ -123,6 +129,15 @@ Eres un product owner experto, teniendo en cuenta la descripción general del pr
 **Prompt 1:**
 
 Teniendo en cuenta las historias de usuario, crea los 3 tickets principales del desarrollo, uno de backend, uno de frontend, y uno de bases de datos. Da todo el detalle requerido para desarrollar la tarea de inicio a fin teniendo en cuenta las buenas prácticas al respecto.
+**Prompt 2:**
+
+Teniendo en cuenta las historias de usuario, crea los 3 tickets principales del desarrollo que permitan desarrollar el MVP: 
+ - backend: Debe ser desarollado en Nestjs, con buenas practicas de desarrollo de software
+ - frontend: Debe ser desarollado en React, con buenas practicas de desarrollo de software
+ - bases de datos: Utilizar PostgreSQL y Prisma como ORM
+ - infraestructura: Utilizar Docker y docker compose para la infraestructura
+
+Da todo el detalle requerido para desarrollar la tarea de inicio a fin teniendo en cuenta las buenas prácticas al respecto.
 
 ---
 
@@ -134,5 +149,6 @@ Como Software Developer enngineer, documenta el Pull Requests que permita especi
 
 **Prompt 2:**
 
+Teniendo en cuenta las diferencias encontradas en el proyecto, documenta el Pull Requests que permita especificar a detalle el trabajo realizado en este repo.
 
 **Prompt 3:**
