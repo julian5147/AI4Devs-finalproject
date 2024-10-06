@@ -21,9 +21,9 @@ describe('CreatePaymentLink', () => {
 
     expect(screen.getByText('Create Payment Link')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Amount'), { target: { value: '100' } });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'USD' } });
-    fireEvent.click(screen.getByText('Create Payment Link'));
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '100' } });
+    fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'USD' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Payment Link' }));
 
     // Add assertions for form submission and API call
   });

@@ -152,3 +152,5 @@ Como Software Developer enngineer, documenta el Pull Requests que permita especi
 Teniendo en cuenta las diferencias encontradas en el proyecto, documenta el Pull Requests que permita especificar a detalle el trabajo realizado en este repo.
 
 **Prompt 3:**
+
+en la sección de **Pull Request 3** documenta el Pull Requests que permita especificar a detalle el trabajo realizado en este repo, teniendo en cuenta las diferencias encontradas en el proyecto.

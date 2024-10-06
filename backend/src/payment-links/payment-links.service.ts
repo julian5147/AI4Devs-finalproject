@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
 
@@ -7,12 +7,24 @@ export class PaymentLinksService {
   constructor(private prisma: PrismaService) {}
 
   async create(createPaymentLinkDto: CreatePaymentLinkDto) {
-    return this.prisma.paymentLink.create({
+    const paymentLink = await this.prisma.paymentLink.create({
       data: {
         ...createPaymentLinkDto,
         url: this.generateUniqueUrl(),
       },
     });
+
+    const transaction = await this.prisma.transaction.create({
+      data: {
+        paymentLinkId: paymentLink.id,
+        amount: paymentLink.amount,
+        currency: paymentLink.currency,
+        status: 'pending',
+        merchantId: paymentLink.merchantId,
+      },
+    });
+
+    return { paymentLink, transaction };
   }
 
   async findOne(id: number) {
@@ -21,8 +33,21 @@ export class PaymentLinksService {
     });
   }
 
+  async findByUrl(url: string) {
+    const completeUrl = `${process.env.FRONTEND_DOMAIN}/pay/${url}`;
+    const paymentLink = await this.prisma.paymentLink.findUnique({
+      where: { url: completeUrl },
+      include: { transactions: true },
+    });
+
+    if (!paymentLink) {
+      throw new NotFoundException('Payment link not found');
+    }
+
+    return paymentLink;
+  }
+
   private generateUniqueUrl(): string {
-    // Implement a method to generate a unique URL
-    return `https://quickash.com/pay/${Math.random().toString(36).slice(2, 11)}`;
+    return `${process.env.FRONTEND_DOMAIN}/pay/${Math.random().toString(36).slice(2, 11)}`;
   }
 }

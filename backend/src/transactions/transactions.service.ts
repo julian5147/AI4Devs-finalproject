@@ -17,4 +17,11 @@ export class TransactionsService {
       where: { merchantId },
     });
   }
+
+  async updateStatus(id: number, status: 'approved' | 'rejected') {
+    return this.prisma.transaction.update({
+      where: { id },
+      data: { status },
+    });
+  }
 }

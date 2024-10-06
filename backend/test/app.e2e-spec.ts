@@ -35,8 +35,10 @@ describe('AppController (e2e)', () => {
       })
       .expect(201)
       .expect((res) => {
-        expect(res.body).toHaveProperty('id');
-        expect(res.body).toHaveProperty('url');
+        expect(res.body.paymentLink).toHaveProperty('id');
+        expect(res.body.paymentLink).toHaveProperty('url');
+        expect(res.body.transaction).toHaveProperty('id');
+        expect(res.body.transaction).toHaveProperty('status', 'pending');
       });
   });
 

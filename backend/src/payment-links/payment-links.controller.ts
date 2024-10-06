@@ -11,13 +11,23 @@ export class PaymentLinksController {
   constructor(private readonly paymentLinksService: PaymentLinksService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new payment link' })
+  @ApiOperation({
+    summary: 'Create a new payment link and pending transaction',
+  })
   @ApiResponse({
     status: 201,
-    description: 'The payment link has been successfully created.',
+    description:
+      'The payment link and pending transaction have been successfully created.',
   })
-  create(@Body() createPaymentLinkDto: CreatePaymentLinkDto) {
-    return this.paymentLinksService.create(createPaymentLinkDto);
+  async create(@Body() createPaymentLinkDto: CreatePaymentLinkDto) {
+    const result = await this.paymentLinksService.create(createPaymentLinkDto);
+    return {
+      paymentLink: result.paymentLink,
+      transaction: {
+        id: result.transaction.id,
+        status: result.transaction.status,
+      },
+    };
   }
 
   @Get(':id')
@@ -25,5 +35,12 @@ export class PaymentLinksController {
   @ApiResponse({ status: 200, description: 'Return the payment link.' })
   findOne(@Param('id') id: string) {
     return this.paymentLinksService.findOne(+id);
+  }
+
+  @Get('by-url/:url')
+  @ApiOperation({ summary: 'Get a payment link by url' })
+  @ApiResponse({ status: 200, description: 'Return the payment link.' })
+  findByUrl(@Param('url') url: string) {
+    return this.paymentLinksService.findByUrl(url);
   }
 }

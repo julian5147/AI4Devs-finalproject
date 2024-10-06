@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { createPaymentLink } from '../services/api';
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createPaymentLink, getPaymentLinkByUrl } from "../services/api";
 
 interface PaymentLink {
   id: number;
@@ -13,7 +13,7 @@ interface PaymentLink {
 }
 
 export const createPaymentLinkAsync = createAsyncThunk(
-  'paymentLinks/createPaymentLink',
+  "paymentLinks/createPaymentLink",
   async (paymentLinkData: any) => {
     const response = await createPaymentLink(paymentLinkData);
     return response;
@@ -21,27 +21,35 @@ export const createPaymentLinkAsync = createAsyncThunk(
 );
 
 const paymentLinksSlice = createSlice({
-  name: 'paymentLinks',
+  name: "paymentLinks",
   initialState: {
     links: [] as PaymentLink[], // Add type annotation here
-    status: 'idle',
+    status: "idle",
     error: null as string | null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(createPaymentLinkAsync.pending, (state) => {
-        state.status = 'loading';
+        state.status = "loading";
       })
       .addCase(createPaymentLinkAsync.fulfilled, (state, action) => {
-        state.status = 'succeeded';
+        state.status = "succeeded";
         state.links.push(action.payload);
       })
       .addCase(createPaymentLinkAsync.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message ?? 'Failed to create payment link';
+        state.status = "failed";
+        state.error = action.error.message ?? "Failed to create payment link";
       });
   },
 });
+
+export const fetchPaymentLinkByUrl = createAsyncThunk(
+  "paymentLinks/fetchByUrl",
+  async (url: string) => {
+    const response = await getPaymentLinkByUrl(url);
+    return response;
+  }
+);
 
 export default paymentLinksSlice.reducer;
