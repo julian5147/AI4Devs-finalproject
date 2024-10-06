@@ -49,9 +49,9 @@ jobs:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
       run: |
-
+        echo "Deploying to EC2 instance..."
         echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-        cat private_key.pem
+        cat private_key
         scp -i private_key -o StrictHostKeyChecking=no -r backend/* ${USER}@${HOST}:~/backend
         ssh -i private_key -o StrictHostKeyChecking=no ${USER}@${HOST} << 'EOF'
 
