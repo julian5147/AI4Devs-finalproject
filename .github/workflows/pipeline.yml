@@ -15,7 +15,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Install dependencies
       run: |
@@ -31,6 +31,8 @@ jobs:
       if: success()
       run: |
         cd backend
+        npm install -g @nestjs/cli
+        nest --version
         npm run build
         npm prune --production
 
@@ -96,5 +98,5 @@ jobs:
             cd ~/backend
 
             # Install dependencies and run the application with PM2 on port 8080
-            pm2 start npm start:prod -- start -- --port 8080
+            pm2 start dist/main.js --name "backend" -- start -- --port 8080
         EOF
