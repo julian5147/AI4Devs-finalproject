@@ -1,27 +1,6 @@
 import { Field, Form, Formik } from "formik";
 import React from "react";
-import styled from "styled-components";
 import * as Yup from "yup";
-
-const StyledForm = styled(Form)`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const StyledField = styled(Field)`
-  padding: 0.5rem;
-  font-size: 1rem;
-`;
-
-const StyledButton = styled.button`
-  padding: 0.5rem 1rem;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-`;
 
 const PaymentLinkSchema = Yup.object().shape({
   amount: Yup.number()
@@ -42,19 +21,41 @@ const PaymentLinkForm: React.FC<PaymentLinkFormProps> = ({ onSubmit }) => {
       onSubmit={onSubmit}
     >
       {({ errors, touched }) => (
-        <StyledForm>
-          <StyledField name="amount" type="number" placeholder="Amount" />
-          {errors.amount && touched.amount && <div>{errors.amount}</div>}
+        <Form className="flex flex-col gap-4">
+          <div>
+            <Field
+              name="amount"
+              type="number"
+              placeholder="Amount"
+              className="w-full p-2 text-base border rounded"
+            />
+            {errors.amount && touched.amount && (
+              <div className="text-red-500 text-sm">{errors.amount}</div>
+            )}
+          </div>
 
-          <StyledField name="currency" as="select">
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
-          </StyledField>
-          {errors.currency && touched.currency && <div>{errors.currency}</div>}
+          <div>
+            <Field
+              name="currency"
+              as="select"
+              className="w-full p-2 text-base border rounded"
+            >
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+            </Field>
+            {errors.currency && touched.currency && (
+              <div className="text-red-500 text-sm">{errors.currency}</div>
+            )}
+          </div>
 
-          <StyledButton type="submit">Create Payment Link</StyledButton>
-        </StyledForm>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded cursor-pointer text-base hover:bg-blue-600 transition-colors"
+          >
+            Create Payment Link
+          </button>
+        </Form>
       )}
     </Formik>
   );

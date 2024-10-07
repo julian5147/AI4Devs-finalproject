@@ -9,7 +9,9 @@ import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     WinstonModule.forRoot({
       transports: [
         new winston.transports.Console(),

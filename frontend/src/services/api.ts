@@ -31,9 +31,29 @@ export const createPaymentLink = async (data: any) => {
   return response.data;
 };
 
+export const getPaymentLinkByUrl = async (url: string) => {
+  const loginResponse = await login();
+  const response = await api.get(`/payment-links/by-url/${url}`, {
+    headers: {
+      Authorization: `Bearer ${loginResponse.access_token}`,
+    },
+  });
+  return response.data;
+};
+
 export const getTransactions = async () => {
   const loginResponse = await login();
   const response = await api.get(`/transactions/merchant/${loginResponse.merchantId}`, {
+    headers: {
+      Authorization: `Bearer ${loginResponse.access_token}`,
+    },
+  });
+  return response.data;
+};
+
+export const updateTransactionStatus = async ({ id, status }: { id: number; status: 'approved' | 'rejected' }) => {
+  const loginResponse = await login();
+  const response = await api.patch(`/transactions/${id}/status`, { status }, {
     headers: {
       Authorization: `Bearer ${loginResponse.access_token}`,
     },

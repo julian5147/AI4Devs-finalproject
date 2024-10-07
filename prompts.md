@@ -62,6 +62,7 @@ En el apartadado de descripción de alto nivel del proyecto y estructura de fich
 
 **Prompt 1:**
 
+En el apartado de infraestructura y despliegue, ayudame detallar la infraestructura del proyecto, incluyendo un diagrama en el formato que creas conveniente, y explica el proceso de despliegue que se sigue.
 **Prompt 2:**
 
 **Prompt 3:**
@@ -152,3 +153,5 @@ Como Software Developer enngineer, documenta el Pull Requests que permita especi
 Teniendo en cuenta las diferencias encontradas en el proyecto, documenta el Pull Requests que permita especificar a detalle el trabajo realizado en este repo.
 
 **Prompt 3:**
+
+en la sección de **Pull Request 3** documenta el Pull Requests que permita especificar a detalle el trabajo realizado en este repo, teniendo en cuenta las diferencias encontradas en el proyecto.

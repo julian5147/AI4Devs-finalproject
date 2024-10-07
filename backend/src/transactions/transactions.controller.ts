@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -28,5 +36,18 @@ export class TransactionsController {
   })
   findAllByMerchant(@Param('id') id: string) {
     return this.transactionsService.findAllByMerchant(+id);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update transaction status' })
+  @ApiResponse({
+    status: 200,
+    description: 'The transaction status has been updated.',
+  })
+  async updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'approved' | 'rejected',
+  ) {
+    return this.transactionsService.updateStatus(+id, status);
   }
 }

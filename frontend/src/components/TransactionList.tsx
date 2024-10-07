@@ -1,21 +1,4 @@
 import React from 'react';
-import styled from 'styled-components';
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-const Th = styled.th`
-  background-color: #f2f2f2;
-  padding: 12px;
-  text-align: left;
-`;
-
-const Td = styled.td`
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
-`;
 
 interface Transaction {
   id: number;
@@ -31,28 +14,28 @@ interface TransactionListProps {
 
 const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
   return (
-    <Table>
+    <table className="w-full border-collapse">
       <thead>
         <tr>
-          <Th>ID</Th>
-          <Th>Amount</Th>
-          <Th>Currency</Th>
-          <Th>Status</Th>
-          <Th>Date</Th>
+          <th className="bg-gray-100 p-3 text-left">ID</th>
+          <th className="bg-gray-100 p-3 text-left">Amount</th>
+          <th className="bg-gray-100 p-3 text-left">Currency</th>
+          <th className="bg-gray-100 p-3 text-left">Status</th>
+          <th className="bg-gray-100 p-3 text-left">Date</th>
         </tr>
       </thead>
       <tbody>
         {transactions.map((transaction) => (
           <tr key={transaction.id}>
-            <Td>{transaction.id}</Td>
-            <Td>{transaction.amount}</Td>
-            <Td>{transaction.currency}</Td>
-            <Td>{transaction.status}</Td>
-            <Td>{new Date(transaction.createdAt).toLocaleString()}</Td>
+            <td className="p-3 border-b">{transaction.id}</td>
+            <td className="p-3 border-b">{transaction.amount}</td>
+            <td className="p-3 border-b">{transaction.currency}</td>
+            <td className="p-3 border-b">{transaction.status}</td>
+            <td className="p-3 border-b">{new Date(transaction.createdAt).toLocaleString()}</td>
           </tr>
         ))}
       </tbody>
-    </Table>
+    </table>
   );
 };
 

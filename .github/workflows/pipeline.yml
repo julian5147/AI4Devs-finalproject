@@ -1,0 +1,164 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run tests
+        run: |
+          cd backend
+          npm test
+
+  deploy_backend:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to EC2
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          FRONTEND_DOMAIN: ${{ secrets.FRONTEND_DOMAIN }}
+        run: |
+          echo "Deploying to EC2 instance..."
+          echo "DB_USER=${DB_USER}" >> .env
+          echo "DB_PASSWORD=${DB_PASSWORD}" >> .env
+          echo "DB_NAME=${DB_NAME}" >> .env
+          echo "DB_PORT=${DB_PORT}" >> .env
+          echo "JWT_SECRET=${JWT_SECRET}" >> .env
+          echo "FRONTEND_DOMAIN=${FRONTEND_DOMAIN}" >> .env
+          echo "DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}" >> .env
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          scp -i private_key -o StrictHostKeyChecking=no -r backend ${USER}@${HOST}:~
+          scp -i private_key -o StrictHostKeyChecking=no .env ${USER}@${HOST}:~/backend
+          ssh -i private_key -o StrictHostKeyChecking=no ${USER}@${HOST} << 'EOF'
+              # Install Nginx if not already installed
+              if ! command -v nginx &> /dev/null; then
+              sudo yum update
+              sudo yum install -y nginx
+              fi
+
+              # Ensure Nginx config directory exists
+              sudo mkdir -p /etc/nginx/sites-available
+              sudo mkdir -p /etc/nginx/sites-enabled
+
+              # Configure Nginx as a reverse proxy using a one-liner
+              echo 'server {
+                  listen 80;
+                  server_name quickash_backend;
+                  
+                  location / {
+                      proxy_pass http://localhost:3010;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+              }' | sudo tee /etc/nginx/conf.d/app.conf > /dev/null
+
+              # Enable the site configuration
+              sudo ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+              # Restart Nginx to apply the new configuration
+              sudo systemctl restart nginx
+
+              # Install PM2 if not already installed
+              if ! command -v pm2 &> /dev/null; then
+                  npm install -g pm2
+              fi
+
+              # Install Nestjs if not already installed
+              if ! command -v nest &> /dev/null; then
+                  npm i -g @nestjs/cli
+              fi
+
+              # Stop the application if it's running
+              pm2 stop all || true
+
+              cd ~/backend
+
+              # Install dependencies and run the application with PM2 on port 3010
+              npx prisma migrate deploy
+              npm run build
+              npm prune --production
+              pm2 start npm --name "backend" -- run start:prod --env production -- --env-file=/home/ec2-user/backend/.env
+          EOF
+
+  deploy_frontend:
+    runs-on: ubuntu-latest
+    needs: [deploy_backend]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci --force
+
+      - name: Build frontend
+        env:
+          REACT_APP_API_BASE_URL: ${{ secrets.BACKEND_DOMAIN }}
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Configure AWS Credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-2'
+        run: |
+          echo "Configuring AWS CLI"
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set region $AWS_REGION
+
+      - name: Deploy frontend to S3
+        env:
+          S3_BUCKET: ${{ secrets.FRONTEND_S3_BUCKET }}
+        run: |
+          cd frontend/build
+          aws s3 sync . s3://$S3_BUCKET --delete
+
+      - name: Invalidate CloudFront cache
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"

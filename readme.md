@@ -27,7 +27,7 @@ Proyecto de desarrollo de una aplicación web para gestionar y recibir pagos de 
 
 ### **0.4. URL del proyecto:**
 
-En construcción...
+http://quickash.com.s3-website.us-east-2.amazonaws.com/
 
 ### 0.5. URL o archivo comprimido del repositorio
 
@@ -120,11 +120,76 @@ Quickash está dirigida principalmente a:
 
 ### **1.3. Diseño y experiencia de usuario:**
 
-En construcción...
+Videotutorial de la aplicación: https://drive.google.com/file/d/1-10yhVO7hjdFVvQkn6Py_ojfHFlBzesB/view?usp=drive_link
 
 ### **1.4. Instrucciones de instalación:**
 
-En construcción...
+#### Requisitos previos
+- Node.js (versión 18 o superior)
+- npm (normalmente viene con Node.js)
+- Docker y Docker Compose
+- Git
+
+#### Pasos de instalación
+
+1. Clonar el repositorio:
+   ```
+   git clone https://github.com/julian5147/AI4Devs-finalproject.git
+   cd AI4Devs-finalproject
+   ```
+
+2. Configurar el backend:
+   ```
+   cd backend
+   cp .env.example .env
+   npm install
+   ```
+   Edita el archivo `.env` con las configuraciones necesarias, especialmente la URL de la base de datos.
+
+3. Configurar el frontend:
+   ```
+   cd ../frontend
+   cp .env.example .env
+   npm install
+   ```
+   Edita el archivo `.env` con la URL del backend.
+
+4. Iniciar la base de datos con Docker:
+   ```
+   docker-compose up -d
+   ```
+
+5. Ejecutar migraciones y semillas de datos:
+   ```
+   cd ../backend
+   npx prisma migrate dev
+   npx prisma db seed
+   ```
+
+6. Iniciar el backend:
+   ```
+   npm run start:dev
+   ```
+   El backend estará disponible en `http://localhost:3010`.
+
+7. Iniciar el frontend (en una nueva terminal):
+   ```
+   cd ../frontend
+   npm start
+   ```
+   El frontend estará disponible en `http://localhost:3000`.
+
+8. Acceder a la documentación de la API:
+   Visita `http://localhost:3010/api` en tu navegador para ver la documentación Swagger.
+
+#### Notas adicionales:
+- Para ejecutar pruebas en el backend: `cd backend && npm test`
+- Para ejecutar pruebas en el frontend: `cd frontend && npm test`
+- Para construir el proyecto para producción:
+  - Backend: `cd backend && npm run build`
+  - Frontend: `cd frontend && npm run build`
+
+Asegúrate de tener todas las variables de entorno necesarias configuradas en los archivos `.env` tanto para el backend como para el frontend.
 
 ---
 
@@ -301,7 +366,64 @@ La arquitectura general sigue los principios de Diseño Orientado al Dominio (DD
 
 ### **2.4. Infraestructura y despliegue**
 
-en construcción...
+Para detallar la infraestructura del proyecto Quickash y explicar el proceso de despliegue, podemos utilizar un diagrama de arquitectura y una descripción del flujo de despliegue. Aquí está una propuesta:
+
+### 2.4. Infraestructura y despliegue
+
+#### Diagrama de infraestructura
+
+![alt text](./res/quickash-infrastructure-diagram.png)
+
+#### Explicación de la infraestructura
+
+1. **GitHub Repository**: Almacena el código fuente del proyecto.
+2. **GitHub Actions CI/CD**: Automatiza el proceso de build, test y despliegue.
+3. **EC2 Instance**: Ejecuta el backend de la aplicación.
+4. **S3 Bucket**: Aloja los archivos estáticos del frontend.
+5. **CloudFront**: Distribuye el contenido del frontend globalmente.
+6. **Nginx Reverse Proxy**: Gestiona las solicitudes entrantes al backend.
+
+#### Proceso de despliegue
+
+1. **Desarrollo y push de código**:
+   Los desarrolladores trabajan en sus ramas locales y crean pull requests hacia la rama principal.
+
+2. **Trigger del pipeline**:
+   Cuando se crea un pull request hacia la rama principal, se activa el pipeline de CI/CD en GitHub Actions.
+
+3. **Build y test**:
+   El pipeline ejecuta los siguientes pasos para el backend:
+    - Instalación de dependencias
+    - Ejecución de tests
+
+4. **Despliegue del backend**:
+   Si los tests pasan, el pipeline despliega el backend en una instancia EC2:
+
+   Este proceso incluye:
+   - Configuración de variables de entorno
+   - Instalación y configuración de Nginx como reverse proxy
+   - Instalación de dependencias
+   - Ejecución de migraciones de base de datos
+   - Inicio de la aplicación usando PM2
+
+5. **Despliegue del frontend**:
+   Después del despliegue exitoso del backend, el pipeline despliega el frontend:
+
+   Este proceso incluye:
+   - Construcción de los archivos estáticos del frontend
+   - Sincronización de los archivos con un bucket S3
+   - Invalidación de la caché de CloudFront
+
+6. **Configuración de seguridad**:
+   - Se utilizan secretos de GitHub Actions para manejar información sensible como claves SSH y credenciales de AWS.
+   - La comunicación entre el frontend y el backend se realiza a través de HTTPS.
+
+7. **Monitoreo y logs**:
+   - PM2 se utiliza para gestionar el proceso del backend, proporcionando logs y monitoreo básico.
+   - Los logs de acceso de Nginx pueden utilizarse para monitorear las solicitudes entrantes.
+   - CloudWatch puede configurarse para monitorear la instancia EC2 y el bucket S3.
+
+Este proceso de despliegue automatizado permite una entrega continua de nuevas características y correcciones de bugs, manteniendo la estabilidad y confiabilidad del sistema. La infraestructura en AWS proporciona escalabilidad y alta disponibilidad para manejar el crecimiento futuro de Quickash.
 
 ### **2.5. Seguridad**
 
@@ -1337,3 +1459,81 @@ El archivo docker-compose.yml orquesta los servicios de la aplicación.
 - [x] La configuración de Docker ha sido probada y funciona según lo esperado.
 
 **Pull Request 3**
+
+# Pull Request 3: Implementación de funcionalidades clave y mejoras en la arquitectura de Quickash
+
+## Descripción
+
+Este Pull Request implementa funcionalidades cruciales para el MVP de Quickash y realiza mejoras significativas en la arquitectura del proyecto. Se han desarrollado componentes esenciales tanto en el backend como en el frontend, junto con la configuración necesaria de la base de datos y la infraestructura.
+
+## Cambios principales
+
+### Backend (NestJS)
+
+1. Implementación de módulos para:
+   - Autenticación de comerciantes
+   - Gestión de enlaces de pago
+   - Procesamiento de transacciones
+
+2. Integración de Prisma ORM para interactuar con la base de datos PostgreSQL.
+
+3. Implementación de autenticación JWT para proteger las rutas de la API.
+
+4. Configuración de validación de datos de entrada utilizando class-validator.
+
+5. Implementación de manejo global de excepciones y filtros HTTP.
+
+### Frontend (React)
+
+1. Creación de componentes para:
+   - Página de transacciones
+   - Lista de transacciones
+   - Formulario de creación de enlaces de pago
+
+2. Implementación de llamadas a la API del backend utilizando Axios.
+
+3. Configuración de manejo de estado global con Redux.
+
+4. Implementación de enrutamiento con React Router.
+
+5. Uso de Tailwind CSS para el estilizado de componentes.
+
+### Base de datos
+
+1. Configuración de PostgreSQL como base de datos principal.
+
+2. Creación de esquemas y migraciones iniciales utilizando Prisma, incluyendo tablas para:
+   - Comerciantes
+   - Enlaces de pago
+   - Transacciones
+
+### Infraestructura
+
+1. Configuración de Docker y docker-compose para facilitar el despliegue y desarrollo.
+
+2. Creación de Dockerfiles para el backend y frontend.
+
+## Pruebas
+
+- Se han implementado pruebas unitarias para los servicios del backend.
+- Se han agregado pruebas de componentes para el frontend.
+
+## Documentación
+
+- Se ha actualizado el README.md con instrucciones de configuración y ejecución.
+- Se ha añadido documentación de la API utilizando OpenAPI (Swagger).
+
+## Próximos pasos
+
+1. Mejorar el manejo de errores y la validación de datos.
+2. Refinar la interfaz de usuario del frontend.
+3. Configurar un pipeline de CI/CD.
+
+## Lista de verificación
+
+- [x] El código sigue los estándares de codificación del proyecto.
+- [x] Se han agregado y actualizado pruebas, y todas pasan correctamente.
+- [x] La documentación ha sido actualizada.
+- [x] La configuración de Docker ha sido probada y funciona según lo esperado.
+
+Este Pull Request representa un avance significativo en el desarrollo de Quickash, implementando las funcionalidades core del MVP y estableciendo una base sólida para el crecimiento futuro del proyecto.
