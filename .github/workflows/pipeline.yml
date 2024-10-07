@@ -27,7 +27,7 @@ jobs:
           cd backend
           npm test
 
-  deploy:
+  deploy_backend:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'pull_request'
@@ -97,7 +97,7 @@ jobs:
 
               # Install Nestjs if not already installed
               if ! command -v nest &> /dev/null; then
-                  npm install -g nest
+                  npm i -g @nestjs/cli
               fi
 
               # Stop the application if it's running
@@ -109,5 +109,56 @@ jobs:
               npx prisma migrate deploy
               npm run build
               npm prune --production
-              pm2 start npm --name "backend" -- run start:prod
+              pm2 start npm --name "backend" -- run start:prod --env production -- --env-file=/home/ec2-user/backend/.env
           EOF
+
+  deploy_frontend:
+    runs-on: ubuntu-latest
+    needs: [deploy_backend]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci --force
+
+      - name: Build frontend
+        env:
+          REACT_APP_API_BASE_URL: ${{ secrets.BACKEND_DOMAIN }}
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Configure AWS Credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-2'
+        run: |
+          echo "Configuring AWS CLI"
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set region $AWS_REGION
+
+      - name: Deploy frontend to S3
+        env:
+          S3_BUCKET: ${{ secrets.FRONTEND_S3_BUCKET }}
+        run: |
+          cd frontend/build
+          aws s3 sync . s3://$S3_BUCKET --delete
+
+      - name: Invalidate CloudFront cache
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
