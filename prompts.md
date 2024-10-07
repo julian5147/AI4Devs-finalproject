@@ -62,6 +62,7 @@ En el apartadado de descripción de alto nivel del proyecto y estructura de fich
 
 **Prompt 1:**
 
+En el apartado de infraestructura y despliegue, ayudame detallar la infraestructura del proyecto, incluyendo un diagrama en el formato que creas conveniente, y explica el proceso de despliegue que se sigue.
 **Prompt 2:**
 
 **Prompt 3:**

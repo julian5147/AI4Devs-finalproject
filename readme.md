@@ -27,7 +27,7 @@ Proyecto de desarrollo de una aplicación web para gestionar y recibir pagos de 
 
 ### **0.4. URL del proyecto:**
 
-En construcción...
+http://quickash.com.s3-website.us-east-2.amazonaws.com/
 
 ### 0.5. URL o archivo comprimido del repositorio
 
@@ -366,7 +366,64 @@ La arquitectura general sigue los principios de Diseño Orientado al Dominio (DD
 
 ### **2.4. Infraestructura y despliegue**
 
-en construcción...
+Para detallar la infraestructura del proyecto Quickash y explicar el proceso de despliegue, podemos utilizar un diagrama de arquitectura y una descripción del flujo de despliegue. Aquí está una propuesta:
+
+### 2.4. Infraestructura y despliegue
+
+#### Diagrama de infraestructura
+
+![alt text](./res/quickash-infrastructure-diagram.png)
+
+#### Explicación de la infraestructura
+
+1. **GitHub Repository**: Almacena el código fuente del proyecto.
+2. **GitHub Actions CI/CD**: Automatiza el proceso de build, test y despliegue.
+3. **EC2 Instance**: Ejecuta el backend de la aplicación.
+4. **S3 Bucket**: Aloja los archivos estáticos del frontend.
+5. **CloudFront**: Distribuye el contenido del frontend globalmente.
+6. **Nginx Reverse Proxy**: Gestiona las solicitudes entrantes al backend.
+
+#### Proceso de despliegue
+
+1. **Desarrollo y push de código**:
+   Los desarrolladores trabajan en sus ramas locales y crean pull requests hacia la rama principal.
+
+2. **Trigger del pipeline**:
+   Cuando se crea un pull request hacia la rama principal, se activa el pipeline de CI/CD en GitHub Actions.
+
+3. **Build y test**:
+   El pipeline ejecuta los siguientes pasos para el backend:
+    - Instalación de dependencias
+    - Ejecución de tests
+
+4. **Despliegue del backend**:
+   Si los tests pasan, el pipeline despliega el backend en una instancia EC2:
+
+   Este proceso incluye:
+   - Configuración de variables de entorno
+   - Instalación y configuración de Nginx como reverse proxy
+   - Instalación de dependencias
+   - Ejecución de migraciones de base de datos
+   - Inicio de la aplicación usando PM2
+
+5. **Despliegue del frontend**:
+   Después del despliegue exitoso del backend, el pipeline despliega el frontend:
+
+   Este proceso incluye:
+   - Construcción de los archivos estáticos del frontend
+   - Sincronización de los archivos con un bucket S3
+   - Invalidación de la caché de CloudFront
+
+6. **Configuración de seguridad**:
+   - Se utilizan secretos de GitHub Actions para manejar información sensible como claves SSH y credenciales de AWS.
+   - La comunicación entre el frontend y el backend se realiza a través de HTTPS.
+
+7. **Monitoreo y logs**:
+   - PM2 se utiliza para gestionar el proceso del backend, proporcionando logs y monitoreo básico.
+   - Los logs de acceso de Nginx pueden utilizarse para monitorear las solicitudes entrantes.
+   - CloudWatch puede configurarse para monitorear la instancia EC2 y el bucket S3.
+
+Este proceso de despliegue automatizado permite una entrega continua de nuevas características y correcciones de bugs, manteniendo la estabilidad y confiabilidad del sistema. La infraestructura en AWS proporciona escalabilidad y alta disponibilidad para manejar el crecimiento futuro de Quickash.
 
 ### **2.5. Seguridad**
 
